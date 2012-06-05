@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Launch an EC2 cluster of Hadoop instances.
+
+# Import variables
+bin=`dirname "$0"`
+bin=`cd "$bin"; pwd`
+. "$bin"/hadoop-ec2-env.sh
+
+if [ -z $1 ]; then
+  echo "Cluster name required!"
+  exit -1
+fi
+
+if [ -z $2 ]; then
+  echo "Must specify the number of slaves to start."
+  exit -1
+fi
+
+if ! . "$bin"/launch-hadoop-nfsserver.sh $1 $HADOOP_VERSION; then
+	exit $?
+fi
+
+if ! . "$bin"/launch-hadoop-master $1 ; then
+  exit $?
+fi
+
+#start rpcbind and nfs
+ssh $SSH_OPTS "root@$MASTER_EC2_HOST" 'service rpcbind start'
+ssh $SSH_OPTS "root@$MASTER_EC2_HOST" 'service nfs start'
+ssh $SSH_OPTS "root@$MASTER_EC2_HOST" "mkdir /usr/local/hadoop-$HADOOP_VERSION"
+ssh $SSH_OPTS "root@$MASTER_EC2_HOST" "mount -t nfs $NFS_PRIVATE_IP:/usr/local/hadoop-$HADOOP_VERSION /usr/local/hadoop-$HADOOP_VERSION"
+
+if ! . "$bin"/launch-hadoop-slaves $* ; then
+  exit $?
+fi
+
+#generate master file
+echo "localhost" > masters
+echo "Copying master file to nfs-server $NFS_PRIVATE_IP"
+scp $SSH_OPTS masters "root@$NFS_PRIVATE_IP:/usr/local/hadoop-$HADOOP_VERSION/conf"
+
+
+#generate slave file
+OLD_IFS="$IFS"
+IFS=' \n'
+NUM_SERVER=`expr $2 + 1`
+while true; do
+	HOSTS=`ec2-describe-instances | grep INSTANCE | grep running | awk '{print \$16}'`;
+	HOSTS_ADDR=($HOSTS)
+	echo $HOSTS_ADDR > slaves.tmp
+	NUM_RUNNING_SERVER=`cat slaves.tmp | wc -l`
+	if [ $NUM_RUNNING_SERVER -eq $NUM_SERVER ]; then
+		break;
+	fi
+	sleep 5;
+done
+#remove the master addr
+sed -e '1d' slaves.tmp > slaves
+#get MASTER_PRIVATE_IP
+MASTER_PRIVATE_IP=`sed -n '1,1p' slaves.tmp`
+rm slaves.tmp
+#recover IFS
+IFS="$OLD_IFS"
+
+#setup slaves
+cat slaves | while read line
+do
+	CURRENT_SLAVE_IP=${line}
+	#start rpcbind and nfs
+	ssh $SSH_OPTS "root@$CURRENT_SLAVE_IP" 'service rpcbind start'
+	ssh $SSH_OPTS "root@$CURRENT_SLAVE_IP" 'service nfs start'
+	ssh $SSH_OPTS "root@$CURRENT_SLAVE_IP" "mkdir /usr/local/hadoop-$HADOOP_VERSION"
+	ssh $SSH_OPTS "root@$CURRENT_SLAVE_IP" "mount -t nfs $NFS_PRIVATE_IP:/usr/local/hadoop-$HADOOP_VERSION /usr/local/hadoop-$HADOOP_VERSION"
+done	
+
+echo "Copying slave file to nfs-server $NFS_PRIVATE_IP"
+scp $SSH_OPTS slaves "root@$NFS_PRIVATE_IP:/usr/local/hadoop-$HADOOP_VERSION/conf"
+

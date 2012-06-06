@@ -1,1 +1,7 @@
 *~
+.swp
+slaves
+masters
+bin/.launch-hadoop-cluster.swp
+
+bin/slaves

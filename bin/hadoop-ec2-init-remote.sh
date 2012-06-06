@@ -14,15 +14,10 @@
 # A node  knows if it is the master or not by inspecting the security group
 # name. If it is the master then it retrieves its address using instance data.
 
-JAVA_VERSION=1.6.0_32
-MASTER_HOST=%MASTER_HOST% # Interpolated before being sent to EC2 node
-SECURITY_GROUPS=`wget -q -O - http://169.254.169.254/latest/meta-data/security-groups`
-IS_MASTER=`echo $SECURITY_GROUPS | awk '{ a = match ($0, "-master$"); if (a) print "true"; else print "false"; }'`
-if [ "$IS_MASTER" == "true" ]; then
- MASTER_HOST=`wget -q -O - http://169.254.169.254/latest/meta-data/local-hostname`
-fi
-
-HADOOP_HOME=`ls -d /usr/local/hadoop-*`
+# Import variables
+bin=`dirname "$0"`
+bin=`cd "$bin"; pwd`
+. "$bin"/hadoop-ec2-env.sh
 
 ################################################################################
 # Hadoop configuration
@@ -32,6 +27,7 @@ HADOOP_HOME=`ls -d /usr/local/hadoop-*`
 cat > $HADOOP_HOME/conf/hadoop-env.sh <<EOF
 export JAVA_HOME=/usr/local/jdk$JAVA_VERSION
 export HADOOP_LOG_DIR=/mnt/hadoop/log
+export HADOOP_HOME=/usr/local/$HADOOP_HOME
 EOF
 
 cat > $HADOOP_HOME/conf/core-site.xml <<EOF
@@ -88,25 +84,6 @@ cat > $HADOOP_HOME/conf/mapred-site.xml <<EOF
 
 EOF
 
-# Configure Hadoop for Ganglia
-# overwrite hadoop-metrics.properties
-cat > $HADOOP_HOME/conf/hadoop-metrics.properties <<EOF
-
-# Ganglia
-# we push to the master gmond so hostnames show up properly
-dfs.class=org.apache.hadoop.metrics.ganglia.GangliaContext
-dfs.period=10
-dfs.servers=$MASTER_HOST:8649
-
-mapred.class=org.apache.hadoop.metrics.ganglia.GangliaContext
-mapred.period=10
-mapred.servers=$MASTER_HOST:8649
-
-jvm.class=org.apache.hadoop.metrics.ganglia.GangliaContext
-jvm.period=10
-jvm.servers=$MASTER_HOST:8649
-EOF
-
 ################################################################################
 # Start services
 ################################################################################
@@ -120,37 +97,12 @@ export USER="root"
 
 if [ "$IS_MASTER" == "true" ]; then
   # MASTER
-  # Prep Ganglia
-  sed -i -e "s|\( *mcast_join *=.*\)|#\1|" \
-         -e "s|\( *bind *=.*\)|#\1|" \
-         -e "s|\( *mute *=.*\)|  mute = yes|" \
-         -e "s|\( *location *=.*\)|  location = \"master-node\"|" \
-         /etc/gmond.conf
-  mkdir -p /mnt/ganglia/rrds
-  chown -R ganglia:ganglia /mnt/ganglia/rrds
-  rm -rf /var/lib/ganglia; cd /var/lib; ln -s /mnt/ganglia ganglia; cd
-  service gmond start
-  service gmetad start
-  apachectl start
 
   # Hadoop
   # only format on first boot
   [ ! -e /mnt/hadoop/dfs ] && "$HADOOP_HOME"/bin/hadoop namenode -format
 
-  "$HADOOP_HOME"/bin/hadoop-daemon.sh start namenode
-  "$HADOOP_HOME"/bin/hadoop-daemon.sh start jobtracker
-else
-  # SLAVE
-  # Prep Ganglia
-  sed -i -e "s|\( *mcast_join *=.*\)|#\1|" \
-         -e "s|\( *bind *=.*\)|#\1|" \
-         -e "s|\(udp_send_channel {\)|\1\n  host=$MASTER_HOST|" \
-         /etc/gmond.conf
-  service gmond start
-
-  # Hadoop
-  "$HADOOP_HOME"/bin/hadoop-daemon.sh start datanode
-  "$HADOOP_HOME"/bin/hadoop-daemon.sh start tasktracker
+  "$HADOOP_HOME"/bin/start-all.sh
 fi
 
 # Run this script on next boot

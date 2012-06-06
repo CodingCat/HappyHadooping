@@ -41,6 +41,7 @@ SSH_OPTS=`echo -i "$PRIVATE_KEY_PATH" -o StrictHostKeyChecking=no -o ServerAlive
 
 # The version of Hadoop to use.
 HADOOP_VERSION=1.0.3
+HADOOP_HOME="/usr/local/hadoop-$HADOOP_VERSION"
 
 # The Amazon S3 bucket where the Hadoop AMI is stored.
 # The default value is for public images, so can be left if you are using running a public image.

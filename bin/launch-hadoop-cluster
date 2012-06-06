@@ -50,31 +50,33 @@ if ! . "$bin"/launch-hadoop-slaves $* ; then
   exit $?
 fi
 
-#generate master file
+
+#upload master file
 echo "localhost" > masters
-echo "Copying master file to nfs-server $NFS_PRIVATE_IP"
-scp $SSH_OPTS masters "root@$NFS_PRIVATE_IP:/usr/local/hadoop-$HADOOP_VERSION/conf"
+echo "Copying master file to nfs-server $NFS_HOST"
+scp $SSH_OPTS masters "root@$NFS_HOST:/usr/local/hadoop-$HADOOP_VERSION/conf"
 
 
 #generate slave file
 OLD_IFS="$IFS"
 IFS=' \n'
-NUM_SERVER=`expr $2 + 1`
+NUM_SERVER=`expr $2 + 2` #containing the NFS server
 while true; do
-	HOSTS=`ec2-describe-instances | grep INSTANCE | grep running | awk '{print \$16}'`;
+	HOSTS=`ec2-describe-instances | grep INSTANCE | grep running | awk '{print \$15}'`;
 	HOSTS_ADDR=($HOSTS)
 	echo $HOSTS_ADDR > slaves.tmp
 	NUM_RUNNING_SERVER=`cat slaves.tmp | wc -l`
 	if [ $NUM_RUNNING_SERVER -eq $NUM_SERVER ]; then
 		break;
 	fi
-	sleep 5;
+	sleep 1;
 done
 #remove the master addr
-sed -e '1d' slaves.tmp > slaves
+sed -e '1d' slaves.tmp > slaves.tmp.tmp
+MASTER_PRIVATE_IP=`sed -n '1,1p' slaves.tmp.tmp`
+sed -e '1d' slaves.tmp.tmp > slaves
 #get MASTER_PRIVATE_IP
-MASTER_PRIVATE_IP=`sed -n '1,1p' slaves.tmp`
-rm slaves.tmp
+rm slaves.tm*
 #recover IFS
 IFS="$OLD_IFS"
 
@@ -89,6 +91,10 @@ do
 	ssh $SSH_OPTS "root@$CURRENT_SLAVE_IP" "mount -t nfs $NFS_PRIVATE_IP:/usr/local/hadoop-$HADOOP_VERSION /usr/local/hadoop-$HADOOP_VERSION"
 done	
 
-echo "Copying slave file to nfs-server $NFS_PRIVATE_IP"
-scp $SSH_OPTS slaves "root@$NFS_PRIVATE_IP:/usr/local/hadoop-$HADOOP_VERSION/conf"
+echo "Copying slave file to nfs-server $NFS_HOST"
+scp $SSH_OPTS slaves "root@$NFS_HOST:/usr/local/hadoop-$HADOOP_VERSION/conf"
 
+#upload configuration script 
+echo "Copying configuring script to nfs-server $NFS_HOST"
+scp $SSH_OPTS hadoop-ec2-init-remote.sh "root@$NFS_HOST:/usr/local/hadoop-$HADOOP_VERSION/conf"
+ssh $SSH_OPTS "root@$NFS_HOST" "/usr/local/hadoop-$HADOOP_VERSION/conf/hadoop-ec2.init-remote.sh"

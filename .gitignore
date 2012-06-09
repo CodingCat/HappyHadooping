@@ -3,5 +3,7 @@
 slaves
 masters
 bin/.launch-hadoop-cluster.swp
-
+.svn/*
+bin/.svn/*
+bin/image/.svn/*
 bin/slaves

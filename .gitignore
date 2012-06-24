@@ -1,5 +1,5 @@
 *~
-.swp
+*.swp
 slaves
 masters
 bin/.launch-hadoop-cluster.swp

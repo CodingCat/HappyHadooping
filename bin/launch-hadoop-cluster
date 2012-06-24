@@ -49,7 +49,7 @@ OLD_IFS="$IFS"
 IFS=' \n'
 NUM_SERVER=`expr $2 + 2` #containing the NFS server
 while true; do
-	HOSTS=`ec2-describe-instances | grep INSTANCE | grep running | awk '{print \$16}'`;
+	HOSTS=`ec2-describe-instances | grep INSTANCE | grep running | awk '{print \$15}'`;
 	HOSTS_ADDR=($HOSTS)
 	echo $HOSTS_ADDR > slaves.tmp
 	NUM_RUNNING_SERVER=`cat slaves.tmp | wc -l`

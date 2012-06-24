@@ -43,14 +43,10 @@ fi
 # Finding Hadoop image
 AMI_IMAGE=`ec2-describe-images -a | grep $S3_BUCKET | grep $HADOOP_VERSION | grep $ARCH |grep available | awk '{print $2}'`
 #AMI_IMAGE=ami-2b5fba42
-MASTER_HOST=`cat $MASTER_PRIVATE_IP_PATH`
 MASTER_ZONE=`cat $MASTER_ZONE_PATH`
 
-# Substituting master hostname
-sed -e "s|%MASTER_HOST%|$MASTER_HOST|" "$bin"/$USER_DATA_FILE > "$bin"/$USER_DATA_FILE.slave
 
 # Start slaves
 echo "Adding $1 node(s) to cluster group $CLUSTER with AMI $AMI_IMAGE"
-ec2-run-instances $AMI_IMAGE -n "$NO_INSTANCES" -g "$CLUSTER" -k "$KEY_NAME" -f "$bin"/$USER_DATA_FILE.slave -t "$INSTANCE_TYPE" -z "$MASTER_ZONE" $KERNEL_ARG | grep INSTANCE | awk '{print $2}'
+ec2-run-instances $AMI_IMAGE -n "$NO_INSTANCES" -g "$CLUSTER" -k "$KEY_NAME" -f "$bin"/image/$USER_DATA_FILE.slave -t "$INSTANCE_TYPE" -z "$MASTER_ZONE" $KERNEL_ARG | grep INSTANCE | awk '{print $2}'
 
-rm "$bin"/$USER_DATA_FILE.slave

@@ -33,6 +33,9 @@ ssh $SSH_OPTS "root@$MASTER_EC2_HOST" 'service nfs start'
 ssh $SSH_OPTS "root@$MASTER_EC2_HOST" "mkdir /usr/local/hadoop-$HADOOP_VERSION"
 ssh $SSH_OPTS "root@$MASTER_EC2_HOST" "mount -t nfs $NFS_PRIVATE_IP:/usr/local/hadoop-$HADOOP_VERSION /usr/local/hadoop-$HADOOP_VERSION"
 
+# Substituting master hostname
+sed -e "s|%MASTER_HOST%|$MASTER_EC2_HOST|" "$bin"/$USER_DATA_FILE > "$bin"/image/$USER_DATA_FILE.slave
+
 if ! . "$bin"/launch-hadoop-slaves $* ; then
   exit $?
 fi
@@ -68,9 +71,11 @@ rm slaves.tm*
 IFS="$OLD_IFS"
 
 #setup slaves
+echo 'setup slave nodes'
 cat slaves | while read line
 do
 	CURRENT_SLAVE_IP=${line}
+	echo "setup slave node $CURRENT_SLAVE_IP"
 	#start rpcbind and nfs
 	ssh $SSH_OPTS "root@$CURRENT_SLAVE_IP" 'service rpcbind start'
 	ssh $SSH_OPTS "root@$CURRENT_SLAVE_IP" 'service nfs start'
@@ -83,5 +88,9 @@ scp $SSH_OPTS slaves "root@$NFS_HOST:/usr/local/hadoop-$HADOOP_VERSION/conf"
 
 #upload configuration script 
 echo "Copying configuring script to nfs-server $NFS_HOST"
-scp $SSH_OPTS hadoop-ec2-init-remote.sh "root@$NFS_HOST:/usr/local/hadoop-$HADOOP_VERSION/conf"
-ssh $SSH_OPTS "root@$NFS_HOST" "/usr/local/hadoop-$HADOOP_VERSION/conf/hadoop-ec2-init-remote.sh"
+scp $SSH_OPTS hadoop-ec2-env.sh "root@$NFS_HOST:/usr/local/hadoop-$HADOOP_VERSION/bin"
+scp $SSH_OPTS "$bin"/image/$USER_DATA_FILE.slave "root@$NFS_HOST:/usr/local/hadoop-$HADOOP_VERSION/bin/$USER_DATA_FILE"
+ssh $SSH_OPTS "root@$NFS_HOST" "chmod 655 /usr/local/hadoop-$HADOOP_VERSION/bin/hadoop-ec2-init-remote.sh"
+ssh $SSH_OPTS "root@$MASTER_EC2_HOST" "/usr/local/hadoop-$HADOOP_VERSION/bin/hadoop-ec2-init-remote.sh"
+
+rm "$bin"/image/$USER_DATA_FILE.slave

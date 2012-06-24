@@ -19,6 +19,14 @@ bin=`dirname "$0"`
 bin=`cd "$bin"; pwd`
 . "$bin"/hadoop-ec2-env.sh
 
+JAVA_VERSION=1.6.0_32
+MASTER_HOST=%MASTER_HOST% # Interpolated before being sent to EC2 node
+SECURITY_GROUPS=`wget -q -O - http://169.254.169.254/latest/meta-data/security-groups`
+IS_MASTER=`echo $SECURITY_GROUPS | awk '{ a = match ($0, "-master$"); if (a) print "true"; else print "false"; }'`
+if [ "$IS_MASTER" == "true" ]; then
+ MASTER_HOST=`wget -q -O - http://169.254.169.254/latest/meta-data/local-hostname`
+fi
+
 ################################################################################
 # Hadoop configuration
 # Modify this section to customize your Hadoop cluster.
@@ -27,7 +35,7 @@ bin=`cd "$bin"; pwd`
 cat > $HADOOP_HOME/conf/hadoop-env.sh <<EOF
 export JAVA_HOME=/usr/local/jdk$JAVA_VERSION
 export HADOOP_LOG_DIR=/mnt/hadoop/log
-export HADOOP_HOME=/usr/local/$HADOOP_HOME
+export HADOOP_HOME=$HADOOP_HOME
 EOF
 
 cat > $HADOOP_HOME/conf/core-site.xml <<EOF
@@ -36,7 +44,7 @@ cat > $HADOOP_HOME/conf/core-site.xml <<EOF
 <configuration>
 	<property>
 		<name>fs.default.name</name>
-		<value>hdfs://$MASTER_HOST:50001</value>
+		<value>hdfs://%MASTER_HOST%:50001</value>
 	</property>
 </configuration>
 EOF
@@ -62,7 +70,7 @@ cat > $HADOOP_HOME/conf/mapred-site.xml <<EOF
 <configuration>
 	<property>
 		<name>mapred.job.tracker</name>
-		<value>hdfs://$MASTER_HOST:50002</value>
+		<value>%MASTER_HOST%:50002</value>
 	</property>
 	<property>
 		<name>mapred.system.dir</name>
@@ -87,6 +95,8 @@ EOF
 ################################################################################
 # Start services
 ################################################################################
+
+echo 'Starting Service'
 
 [ ! -f /etc/hosts ] &&  echo "127.0.0.1 localhost" > /etc/hosts
 

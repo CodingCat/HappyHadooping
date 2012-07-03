@@ -92,6 +92,8 @@ cat > $HADOOP_HOME/conf/mapred-site.xml <<EOF
 
 EOF
 
+
+
 ################################################################################
 # Start services
 ################################################################################
@@ -117,3 +119,12 @@ fi
 
 # Run this script on next boot
 rm -f /var/ec2/ec2-run-user-data.*
+
+################################################################################
+#Install workload generator
+################################################################################
+
+echo 'Downloading Workload Generator'
+
+wget -nv -o https://s3.amazonaws.com/myhadoop-images/workloadgen.jar 
+

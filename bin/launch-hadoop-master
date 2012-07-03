@@ -122,3 +122,16 @@ MASTER_IP=`dig +short $MASTER_EC2_HOST`
 #output
 echo "Master is $MASTER_EC2_HOST, ip is $MASTER_IP, zone is $MASTER_EC2_ZONE."
 
+#start rpcbind and nfs
+echo 'setuping master'
+ssh $SSH_OPTS "root@$MASTER_EC2_HOST" 'service rpcbind start'
+ssh $SSH_OPTS "root@$MASTER_EC2_HOST" 'service nfs start'
+ssh $SSH_OPTS "root@$MASTER_EC2_HOST" "mkdir /usr/local/hadoop-$HADOOP_VERSION"
+ssh $SSH_OPTS "root@$MASTER_EC2_HOST" "mount -t nfs $NFS_PRIVATE_IP:/usr/local/hadoop-$HADOOP_VERSION /usr/local/hadoop-$HADOOP_VERSION"
+
+#upload master file
+echo "localhost" > masters
+echo "Copying master file to nfs-server $NFS_HOST"
+scp $SSH_OPTS masters "root@$NFS_HOST:/usr/local/hadoop-$HADOOP_VERSION/conf"
+
+

@@ -43,10 +43,64 @@ fi
 # Finding Hadoop image
 AMI_IMAGE=`ec2-describe-images -a | grep $S3_BUCKET | grep $HADOOP_VERSION | grep $ARCH |grep available | awk '{print $2}'`
 #AMI_IMAGE=ami-2b5fba42
+MASTER_HOST=`cat $MASTER_PRIVATE_IP_PATH`
 MASTER_ZONE=`cat $MASTER_ZONE_PATH`
 
+# Substituting master hostname
+sed -e "s|%MASTER_HOST%|$MASTER_HOST|" "$bin"/$USER_DATA_FILE > "$bin"/image/$USER_DATA_FILE.slave
+
+# Finding NFS Server
+NFS_HOST=`ec2-describe-instances | grep 'running' | head -1 | awk '{print $4}'`
 
 # Start slaves
 echo "Adding $1 node(s) to cluster group $CLUSTER with AMI $AMI_IMAGE"
-ec2-run-instances $AMI_IMAGE -n "$NO_INSTANCES" -g "$CLUSTER" -k "$KEY_NAME" -f "$bin"/image/$USER_DATA_FILE.slave -t "$INSTANCE_TYPE" -z "$MASTER_ZONE" $KERNEL_ARG | grep INSTANCE | awk '{print $2}'
+ec2-run-instances $AMI_IMAGE -n "$NO_INSTANCES" -g "$CLUSTER" -k "$KEY_NAME" -t "$INSTANCE_TYPE" -z "$MASTER_ZONE" $KERNEL_ARG | grep INSTANCE | awk '{print $2}'
 
+#generate slave file
+OLD_IFS="$IFS"
+IFS=' \n'
+NUM_RUNNING=`ec2-describe-instances | grep running | wc -l`
+NUM_SERVER=`expr $2 + $NUM_RUNNING` #containing the NFS server
+while true; do
+	HOSTS=`ec2-describe-instances | grep INSTANCE | grep running | awk '{print \$15}'`;
+	HOSTS_ADDR=($HOSTS)
+	echo $HOSTS_ADDR > slaves.tmp
+	NUM_RUNNING_SERVER=`cat slaves.tmp | wc -l`
+	if [ $NUM_RUNNING_SERVER -eq $NUM_SERVER ]; then
+		break;
+	fi
+	sleep 1;
+done
+#remove the master addr
+sed -e '1d' slaves.tmp > slaves.tmp.tmp
+MASTER_PRIVATE_IP=`sed -n '1,1p' slaves.tmp.tmp`
+sed -e '1d' slaves.tmp.tmp > slaves
+#get MASTER_PRIVATE_IP
+rm slaves.tm*
+#recover IFS
+IFS="$OLD_IFS"
+
+#setup slaves
+echo 'setup slave nodes'
+cat slaves | while read line
+do
+	CURRENT_SLAVE_IP=${line}
+	echo "setup slave node $CURRENT_SLAVE_IP"
+	#start rpcbind and nfs
+	ssh $SSH_OPTS "root@$CURRENT_SLAVE_IP" 'service rpcbind start'
+	ssh $SSH_OPTS "root@$CURRENT_SLAVE_IP" 'service nfs start'
+	ssh $SSH_OPTS "root@$CURRENT_SLAVE_IP" "mkdir /usr/local/hadoop-$HADOOP_VERSION"
+	ssh $SSH_OPTS "root@$CURRENT_SLAVE_IP" "mount -t nfs $NFS_PRIVATE_IP:/usr/local/hadoop-$HADOOP_VERSION /usr/local/hadoop-$HADOOP_VERSION"
+done	
+
+echo "Copying slave file to nfs-server $NFS_HOST"
+scp $SSH_OPTS slaves "root@$NFS_HOST:/usr/local/hadoop-$HADOOP_VERSION/conf"
+
+#upload configuration script 
+echo "Copying configuring script to nfs-server $NFS_HOST"
+scp $SSH_OPTS hadoop-ec2-env.sh "root@$NFS_HOST:/usr/local/hadoop-$HADOOP_VERSION/bin"
+scp $SSH_OPTS "$bin"/image/$USER_DATA_FILE.slave "root@$NFS_HOST:/usr/local/hadoop-$HADOOP_VERSION/bin/$USER_DATA_FILE"
+ssh $SSH_OPTS "root@$NFS_HOST" "chmod 655 /usr/local/hadoop-$HADOOP_VERSION/bin/hadoop-ec2-init-remote.sh"
+ssh $SSH_OPTS "root@$MASTER_EC2_HOST" "/usr/local/hadoop-$HADOOP_VERSION/bin/hadoop-ec2-init-remote.sh"
+
+rm "$bin"/image/$USER_DATA_FILE.slave

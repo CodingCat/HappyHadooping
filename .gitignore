@@ -7,3 +7,5 @@ bin/.launch-hadoop-cluster.swp
 bin/.svn/*
 bin/image/.svn/*
 bin/slaves
+
+bin/image/hadoop-ec2-init-remote.sh.slave

@@ -44,21 +44,25 @@ cat > $HADOOP_HOME/conf/core-site.xml <<EOF
 <configuration>
 	<property>
 		<name>fs.default.name</name>
-		<value>s3://standard-hadoop</value>
-	</property>
-	<property>
-		<name>fs.s3.awsAccessKeyId</name>
-		<value>AKIAI7VPDDBR6BRP7DVQ</value>
-	</property>
-	<property>
-		<name>fs.s3.awsSecretAccessKey</name>
-		<value>5YgDMVgJ0y54S2TmWgdVrPEz4PZFxEPzDCKyBM3z</value>
-	</property>
-	<property>
-		<name>hadoop.tmp.dir</name>
-		<value>/hadoop/<value>
+		<value>hdfs://%MASTER_HOST%:50001</value>
 	</property>
 </configuration>
+EOF
+
+cat > $HADOOP_HOME/conf/hdfs-site.xml <<EOF
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+	<property>
+		<name>dfs.name.dir</name>
+		<value>/mnt/hadoop/name</value>
+	</property>
+	<property>
+		<name>dfs.data.dir</name>
+		<value>/mnt/hadoop/data</value>
+	</property>
+</configuration>
+
 EOF
 
 cat > $HADOOP_HOME/conf/mapred-site.xml <<EOF
@@ -68,6 +72,15 @@ cat > $HADOOP_HOME/conf/mapred-site.xml <<EOF
 	<property>
 		<name>mapred.job.tracker</name>
 		<value>%MASTER_HOST%:50002</value>
+	</property>
+	<property>
+		<name>mapred.tasktracker.map.tasks.maximum</name>
+		<value>3</value>
+	</property>
+	<property>
+		<name>mapred.tasktracker.reduce.tasks.maximum</name>
+		<value>3</value>
+	</property>
 	</property>
 	<property>
 		<name>mapred.acls.enabled</name>
@@ -99,7 +112,7 @@ if [ "$IS_MASTER" == "true" ]; then
   # only format on first boot
   [ ! -e /mnt/hadoop/dfs ] && "$HADOOP_HOME"/bin/hadoop namenode -format
 
-  "$HADOOP_HOME"/bin/start-mapred.sh
+  "$HADOOP_HOME"/bin/start-all.sh
 fi
 
 # Run this script on next boot
@@ -115,4 +128,6 @@ wget -nv 'https://s3.amazonaws.com/myhadoop-images/workloadgen.jar' --no-check-c
 wget -nv 'https://s3.amazonaws.com/myhadoop-images/WorkloadGen-Conf.dtd' --no-check-certificate
 wget -nv 'https://s3.amazonaws.com/myhadoop-images/config.xml' --no-check-certificate
 wget -nv 'https://s3.amazonaws.com/myhadoop-images/exampleTrace.txt' --no-check-certificate
-
+wget -nv 'https://s3.amazonaws.com/myhadoop-images/runworkloadgen' --no-check-certificate
+wget -nv 'https://s3.amazonaws.com/myhadoop-images/env_variables' --no-check-certificate
+wget -nv 'https://s3.amazonaws.com/myhadoop-images/generateInputData.sh' --no-check-certificate

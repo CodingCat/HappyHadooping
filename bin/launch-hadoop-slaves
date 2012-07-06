@@ -81,17 +81,7 @@ rm slaves.tm*
 IFS="$OLD_IFS"
 
 #setup slaves
-echo 'setup slave nodes'
-cat slaves | while read line
-do
-	CURRENT_SLAVE_IP=${line}
-	echo "setup slave node $CURRENT_SLAVE_IP"
-	#start rpcbind and nfs
-	ssh $SSH_OPTS "root@$CURRENT_SLAVE_IP" 'service rpcbind start'
-	ssh $SSH_OPTS "root@$CURRENT_SLAVE_IP" 'service nfs start'
-	ssh $SSH_OPTS "root@$CURRENT_SLAVE_IP" "mkdir /usr/local/hadoop-$HADOOP_VERSION"
-	ssh $SSH_OPTS "root@$CURRENT_SLAVE_IP" "mount -t nfs $NFS_PRIVATE_IP:/usr/local/hadoop-$HADOOP_VERSION /usr/local/hadoop-$HADOOP_VERSION"
-done	
+. "$bin"/slave_setup.sh
 
 echo "Copying slave file to nfs-server $NFS_HOST"
 scp $SSH_OPTS slaves "root@$NFS_HOST:/usr/local/hadoop-$HADOOP_VERSION/conf"

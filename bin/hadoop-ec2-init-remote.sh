@@ -81,7 +81,6 @@ cat > $HADOOP_HOME/conf/mapred-site.xml <<EOF
 		<name>mapred.tasktracker.reduce.tasks.maximum</name>
 		<value>3</value>
 	</property>
-	</property>
 	<property>
 		<name>mapred.acls.enabled</name>
 		<value>false</value>

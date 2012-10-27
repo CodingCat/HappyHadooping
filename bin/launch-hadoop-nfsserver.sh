@@ -26,7 +26,7 @@ ec2-describe-group | egrep "[[:space:]]$CLUSTER_NAME[[:space:]]" > /dev/null
 if [ ! $? -eq 0 ]; then
   echo "Creating group $CLUSTER_NAME"
   ec2-add-group $CLUSTER_NAME -d "Group for Hadoop Cluster."
-  ec2-authorize $CLUSTER_NAME -o $CLUSTER_MASTER -u $AWS_ACCOUNT_ID
+  ec2-authorize $CLUSTER_NAME -u $AWS_ACCOUNT_ID
   ec2-authorize $CLUSTER_NAME -p 22    # ssh
 fi
 
@@ -46,6 +46,17 @@ while true; do
     break;
   fi
   sleep 1
+done
+
+#echo $SSH_OPTS
+#wait for ssh port ready
+
+while true; do 
+	REPLY=`SSH $SSH_OPTS "root@$NFS_HOST" 'echo "hello"'`
+	if [ ! -z $REPLY ]; then
+		break;
+	fi
+#	sleep 5
 done
 
 scp $SSH_OPTS "$bin"/image/ec2-run-user-data "root@$NFS_HOST:/etc/init.d"

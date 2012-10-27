@@ -13,6 +13,7 @@ cd /usr/local
 wget -nv http://s3.amazonaws.com/myhadoop-images/hadoop-$HADOOP_VERSION.tar.gz
 [ ! -f hadoop-$HADOOP_VERSION.tar.gz ] && wget -nv http://www.apache.org/dist/hadoop/core/hadoop-$HADOOP_VERSION/hadoop-$HADOOP_VERSION.tar.gz
 tar xzf hadoop-$HADOOP_VERSION.tar.gz
+mv LongTermFairScheduler hadoop-1.0.3
 rm -f hadoop-$HADOOP_VERSION.tar.gz
 
 echo "/usr/local/hadoop-$HADOOP_VERSION *(rw,no_root_squash)" >> /etc/exports

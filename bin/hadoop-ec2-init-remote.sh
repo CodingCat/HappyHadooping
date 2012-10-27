@@ -62,7 +62,6 @@ cat > $HADOOP_HOME/conf/hdfs-site.xml <<EOF
 		<value>/mnt/hadoop/data</value>
 	</property>
 </configuration>
-
 EOF
 
 cat > $HADOOP_HOME/conf/mapred-site.xml <<EOF
@@ -86,7 +85,6 @@ cat > $HADOOP_HOME/conf/mapred-site.xml <<EOF
 		<value>false</value>
 	</property>
 </configuration>
-
 EOF
 
 

@@ -74,20 +74,56 @@ cat > $HADOOP_HOME/conf/mapred-site.xml <<EOF
 	</property>
 	<property>
 		<name>mapred.tasktracker.map.tasks.maximum</name>
-		<value>3</value>
+		<value>4</value>
 	</property>
 	<property>
 		<name>mapred.tasktracker.reduce.tasks.maximum</name>
-		<value>3</value>
+		<value>4</value>
 	</property>
 	<property>
 		<name>mapred.acls.enabled</name>
 		<value>false</value>
 	</property>
+	<property>
+		<name>mapred.jobtracker.taskScheduler</name>
+		<value>org.apache.hadoop.mapred.FairScheduler</value>
+	</property>
+	<property>
+		<name>mapred.fairscheduler.preemption</name>
+		<value>true</value>
+	</property>
+	<property>
+		<name>mapred.fairscheduler.update.interval</name>
+		<value>60000</value>
+	</property>
+	<property>
+		<name>mapred.fairscheduler.creditupdateinterval</name>
+		<value>60000</value>
+	</property>
 </configuration>
 EOF
 
-
+cat > $HADOOP_HOME/conf/fair-scheduler.xml <<EOF
+<?xml version="1.0"?>
+<allocations>
+	<pool name="queue1">
+		<minMaps>2</minMaps>
+		<minReduces>2</minReduces>
+		<maxMaps>4</maxMaps>
+		<maxReduces>4</maxReduces>
+		<minSharePreemptionTimeout>300</minSharePreemptionTimeout>
+	</pool>
+	<pool name="queue2">
+		<minMaps>2</minMaps>
+		<minReduces>2</minReduces>
+		<maxMaps>4</maxMaps>
+		<maxReduces>4</maxReduces>
+		<minSharePreemptionTimeout>300</minSharePreemptionTimeout>
+	</pool>
+	<fairSharePreemptionTimeout>60</fairSharePreemptionTimeout>
+	<defaultMinSharePreemptionTimeout>60</defaultMinSharePreemptionTimeout>
+</allocations>
+EOF
 
 ################################################################################
 # Start services

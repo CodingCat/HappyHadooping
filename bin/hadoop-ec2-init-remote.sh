@@ -107,17 +107,31 @@ cat > $HADOOP_HOME/conf/fair-scheduler.xml <<EOF
 <?xml version="1.0"?>
 <allocations>
 	<pool name="queue1">
-		<minMaps>2</minMaps>
-		<minReduces>2</minReduces>
-		<maxMaps>4</maxMaps>
-		<maxReduces>4</maxReduces>
+		<minMaps>20</minMaps>
+		<minReduces>20</minReduces>
+		<maxMaps>80</maxMaps>
+		<maxReduces>80</maxReduces>
 		<minSharePreemptionTimeout>300</minSharePreemptionTimeout>
 	</pool>
 	<pool name="queue2">
-		<minMaps>2</minMaps>
-		<minReduces>2</minReduces>
-		<maxMaps>4</maxMaps>
-		<maxReduces>4</maxReduces>
+		<minMaps>20</minMaps>
+		<minReduces>20</minReduces>
+		<maxMaps>80</maxMaps>
+		<maxReduces>80</maxReduces>
+		<minSharePreemptionTimeout>300</minSharePreemptionTimeout>
+	</pool>
+	<pool name="queue3">
+		<minMaps>20</minMaps>
+		<minReduces>20</minReduces>
+		<maxMaps>80</maxMaps>
+		<maxReduces>80</maxReduces>
+		<minSharePreemptionTimeout>300</minSharePreemptionTimeout>
+	</pool>
+	<pool name="queue4">
+		<minMaps>20</minMaps>
+		<minReduces>20</minReduces>
+		<maxMaps>80</maxMaps>
+		<maxReduces>80</maxReduces>
 		<minSharePreemptionTimeout>300</minSharePreemptionTimeout>
 	</pool>
 	<fairSharePreemptionTimeout>60</fairSharePreemptionTimeout>

@@ -18,6 +18,10 @@
 # Run commands on master or specified node of a running Hadoop EC2 cluster.
 
 # if no args specified, show usage
+set -x
+set -u
+set -e
+
 if [ $# = 0 ]; then
   echo "Command required!"
   exit 1

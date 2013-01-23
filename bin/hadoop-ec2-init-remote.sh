@@ -112,6 +112,7 @@ cat > $HADOOP_HOME/conf/fair-scheduler.xml <<EOF
 		<maxMaps>80</maxMaps>
 		<maxReduces>80</maxReduces>
 		<minSharePreemptionTimeout>300</minSharePreemptionTimeout>
+		<schedulingMode>fifo</schedulingMode>
 	</pool>
 	<pool name="queue2">
 		<minMaps>20</minMaps>
@@ -119,6 +120,7 @@ cat > $HADOOP_HOME/conf/fair-scheduler.xml <<EOF
 		<maxMaps>80</maxMaps>
 		<maxReduces>80</maxReduces>
 		<minSharePreemptionTimeout>300</minSharePreemptionTimeout>
+		<schedulingMode>fifo</schedulingMode>
 	</pool>
 	<pool name="queue3">
 		<minMaps>20</minMaps>
@@ -126,6 +128,7 @@ cat > $HADOOP_HOME/conf/fair-scheduler.xml <<EOF
 		<maxMaps>80</maxMaps>
 		<maxReduces>80</maxReduces>
 		<minSharePreemptionTimeout>300</minSharePreemptionTimeout>
+		<schedulingMode>fifo</schedulingMode>
 	</pool>
 	<pool name="queue4">
 		<minMaps>20</minMaps>
@@ -133,6 +136,7 @@ cat > $HADOOP_HOME/conf/fair-scheduler.xml <<EOF
 		<maxMaps>80</maxMaps>
 		<maxReduces>80</maxReduces>
 		<minSharePreemptionTimeout>300</minSharePreemptionTimeout>
+		<schedulingMode>fifo</schedulingMode>
 	</pool>
 	<fairSharePreemptionTimeout>60</fairSharePreemptionTimeout>
 	<defaultMinSharePreemptionTimeout>60</defaultMinSharePreemptionTimeout>
@@ -171,10 +175,10 @@ rm -f /var/ec2/ec2-run-user-data.*
 
 echo 'Downloading Workload Generator'
 
-wget -nv 'https://s3.amazonaws.com/myhadoop-images/workloadgen.jar' --no-check-certificate
+wget -nv 'https://s3.amazonaws.com/myhadoop-images/loadweaver.jar' --no-check-certificate
 wget -nv 'https://s3.amazonaws.com/myhadoop-images/WorkloadGen-Conf.dtd' --no-check-certificate
 wget -nv 'https://s3.amazonaws.com/myhadoop-images/config.xml' --no-check-certificate
-wget -nv 'https://s3.amazonaws.com/myhadoop-images/exampleTrace.txt' --no-check-certificate
-wget -nv 'https://s3.amazonaws.com/myhadoop-images/runworkloadgen' --no-check-certificate
+wget -nv 'https://s3.amazonaws.com/myhadoop-images/exampleTrace.trace' --no-check-certificate
+wget -nv 'https://s3.amazonaws.com/myhadoop-images/runloadweaver' --no-check-certificate
 wget -nv 'https://s3.amazonaws.com/myhadoop-images/env_variables' --no-check-certificate
 wget -nv 'https://s3.amazonaws.com/myhadoop-images/generateInputData.sh' --no-check-certificate

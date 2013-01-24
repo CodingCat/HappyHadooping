@@ -85,3 +85,8 @@ medium jobs, 90 map tasks, 81 reduce tasks
 3.3.5 start the workload gen
 
 $ sh runloadweaver
+
+
+4. stop the amazon ec2 instances
+
+$ ./terminate-cluster test-cluster
